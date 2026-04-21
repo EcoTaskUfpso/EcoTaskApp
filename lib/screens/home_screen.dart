@@ -142,6 +142,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     tasks: _getTasksNextMonth(),
                     color: AppColors.accent,
                   ),
+                  
+                  // Tareas Completadas
+                  _buildTaskSection(
+                    context: context,
+                    title: 'Tareas Completadas',
+                    tasks: _getCompletedTasks(),
+                    color: Colors.green,
+                  ),
                 ],
               ),
             ),
@@ -367,6 +375,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+              // Botones de acción
+              if (!task.isCompleted) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _completeTask(context, task);
+                        },
+                        icon: const Icon(Icons.check_circle),
+                        label: const Text('Completar Tarea'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
               Row(
                 children: [
                   Expanded(
@@ -597,6 +628,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 counters: Map.from(task.counters),
                                 targetGoal: targetGoal,
                                 currentProgress: task.currentProgress,
+                                isCompleted: task.isCompleted,
                               );
                               
                               final taskIndex = _ecoTasks.indexOf(task);
@@ -630,6 +662,55 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _completeTask(BuildContext context, EcoTask task) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Completar Tarea'),
+        content: Text('¿Estás seguro de que quieres marcar "${task.title}" como completada?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              final completedTask = EcoTask(
+                title: task.title,
+                date: task.date,
+                priority: task.priority,
+                category: task.category,
+                description: task.description,
+                icon: task.icon,
+                color: task.color,
+                counters: Map.from(task.counters),
+                targetGoal: task.targetGoal,
+                currentProgress: task.currentProgress,
+                isCompleted: true,
+              );
+              
+              final taskIndex = _ecoTasks.indexOf(task);
+              if (taskIndex != -1) {
+                setState(() {
+                  _ecoTasks[taskIndex] = completedTask;
+                });
+              }
+              
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('¡Tarea completada: ${task.title}!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            child: Text('Completar'),
+          ),
+        ],
       ),
     );
   }
@@ -674,6 +755,10 @@ class _HomeScreenState extends State<HomeScreen> {
     String repeatOption = 'No repetir';
     List<String> selectedDays = [];
     List<int> selectedDates = [];
+    
+    // Variables para control de errores
+    bool titleError = false;
+    bool dateError = false;
 
     showDialog(
       context: context,
@@ -750,15 +835,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: titleController,
+                    onChanged: (value) {
+                      if (titleError) {
+                        setState(() {
+                          titleError = false;
+                        });
+                      }
+                    },
                     decoration: InputDecoration(
                       hintText: 'Ej: Reciclar botellas de plástico',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: titleError ? Colors.red : AppColors.gray.withOpacity(0.3),
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.primary),
+                        borderSide: BorderSide(
+                          color: titleError ? Colors.red : AppColors.primary,
+                        ),
                       ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.red),
+                      ),
+                      errorText: titleError ? 'El título es obligatorio' : null,
                     ),
                   ),
                   
@@ -908,28 +1010,39 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: AppColors.gray.withOpacity(0.3),
+                          color: dateError ? Colors.red : AppColors.gray.withOpacity(0.3),
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today, color: AppColors.primary),
+                          Icon(Icons.calendar_today, color: dateError ? Colors.red : AppColors.primary),
                           const SizedBox(width: 12),
                           Text(
                             selectedDate != null
                                 ? '${selectedDate!.day} ${_getMonthName(selectedDate!.month)} ${selectedDate!.year}'
                                 : 'Seleccionar fecha',
                             style: TextStyle(
-                              color: selectedDate != null ? AppColors.darkGreen : AppColors.gray,
+                              color: selectedDate != null ? AppColors.darkGreen : (dateError ? Colors.red : AppColors.gray),
                             ),
                           ),
                           const Spacer(),
-                          Icon(Icons.arrow_drop_down, color: AppColors.gray),
+                          Icon(Icons.arrow_drop_down, color: dateError ? Colors.red : AppColors.gray),
                         ],
                       ),
                     ),
                   ),
+                  if (dateError)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'La fecha es obligatoria',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                   
                   const SizedBox(height: 16),
                   
@@ -1092,7 +1205,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            if (titleController.text.isNotEmpty && selectedDate != null) {
+                            // Validar campos
+                            bool hasError = false;
+                            
+                            if (titleController.text.isEmpty) {
+                              setState(() {
+                                titleError = true;
+                              });
+                              hasError = true;
+                            }
+                            
+                            if (selectedDate == null) {
+                              setState(() {
+                                dateError = true;
+                              });
+                              hasError = true;
+                            }
+                            
+                            if (!hasError) {
                               _addNewTask(
                                 title: titleController.text,
                                 description: descriptionController.text,
@@ -1151,6 +1281,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: description.isEmpty ? 'Sin descripción' : description,
       icon: _getCategoryIcon(category),
       color: _getCategoryColor(category),
+      isCompleted: false,
     );
     
     setState(() {
@@ -1241,6 +1372,35 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
+                  // Círculo de completado
+                  GestureDetector(
+                    onTap: () {
+                      if (!task.isCompleted) {
+                        _completeTask(context, task);
+                      }
+                    },
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: task.isCompleted ? Colors.green : AppColors.gray.withOpacity(0.5),
+                          width: 2,
+                        ),
+                        color: task.isCompleted ? Colors.green : Colors.transparent,
+                      ),
+                      child: task.isCompleted
+                          ? Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 16,
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  
                   // Icono de la tarea
                   Container(
                     width: 50,
@@ -1325,11 +1485,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     onSelected: (value) {
                       if (value == 'edit') {
                         _editTask(context, task);
+                      } else if (value == 'complete') {
+                        _completeTask(context, task);
                       } else if (value == 'delete') {
                         _deleteTask(context, task);
                       }
                     },
                     itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'complete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.green, size: 18),
+                            const SizedBox(width: 8),
+                            Text('Completar'),
+                          ],
+                        ),
+                      ),
                       PopupMenuItem(
                         value: 'edit',
                         child: Row(
@@ -1432,6 +1604,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       counters: Map.from(task.counters),
                       targetGoal: task.targetGoal,
                       currentProgress: total,
+                      isCompleted: task.isCompleted,
                     );
                     
                     // Reemplazar la tarea en la lista
@@ -1455,7 +1628,8 @@ class _HomeScreenState extends State<HomeScreen> {
     
     return _ecoTasks.where((task) {
       final taskDate = _parseDate(task.date);
-      return taskDate.isAfter(now.subtract(const Duration(days: 1))) && 
+      return !task.isCompleted &&
+             taskDate.isAfter(now.subtract(const Duration(days: 1))) && 
              taskDate.isBefore(weekEnd.add(const Duration(days: 1)));
     }).toList();
   }
@@ -1466,7 +1640,8 @@ class _HomeScreenState extends State<HomeScreen> {
     
     return _ecoTasks.where((task) {
       final taskDate = _parseDate(task.date);
-      return taskDate.month == now.month && 
+      return !task.isCompleted &&
+             taskDate.month == now.month && 
              taskDate.year == now.year &&
              !taskDate.isBefore(now) &&
              !taskDate.isAfter(monthEnd);
@@ -1480,9 +1655,14 @@ class _HomeScreenState extends State<HomeScreen> {
     
     return _ecoTasks.where((task) {
       final taskDate = _parseDate(task.date);
-      return taskDate.isAfter(nextMonth.subtract(const Duration(days: 1))) && 
+      return !task.isCompleted &&
+             taskDate.isAfter(nextMonth.subtract(const Duration(days: 1))) && 
              taskDate.isBefore(nextMonthEnd.add(const Duration(days: 1)));
     }).toList();
+  }
+
+  List<EcoTask> _getCompletedTasks() {
+    return _ecoTasks.where((task) => task.isCompleted).toList();
   }
 
   DateTime _parseDate(String dateString) {
@@ -1511,6 +1691,7 @@ class EcoTask {
   final Map<String, int> counters; // Contadores para cada categoría
   final int targetGoal; // Meta total a alcanzar
   final int currentProgress; // Progreso actual
+  final bool isCompleted; // Estado de completado
 
   EcoTask({
     required this.title,
@@ -1523,6 +1704,7 @@ class EcoTask {
     this.counters = const {},
     this.targetGoal = 0,
     this.currentProgress = 0,
+    this.isCompleted = false,
   });
 }
 
@@ -1542,6 +1724,7 @@ final List<EcoTask> _ecoTasks = [
     },
     targetGoal: 50,
     currentProgress: 35,
+    isCompleted: false,
   ),
   EcoTask(
     title: 'Plantar árboles en el parque',
@@ -1557,6 +1740,7 @@ final List<EcoTask> _ecoTasks = [
     },
     targetGoal: 20,
     currentProgress: 8,
+    isCompleted: false,
   ),
   EcoTask(
     title: 'Compostaje orgánico',
@@ -1572,6 +1756,7 @@ final List<EcoTask> _ecoTasks = [
     },
     targetGoal: 100,
     currentProgress: 35,
+    isCompleted: false,
   ),
   EcoTask(
     title: 'Limpiar playa local',
@@ -1588,6 +1773,7 @@ final List<EcoTask> _ecoTasks = [
     },
     targetGoal: 200,
     currentProgress: 45,
+    isCompleted: false,
   ),
   EcoTask(
     title: 'Reducir consumo de agua',
@@ -1603,5 +1789,6 @@ final List<EcoTask> _ecoTasks = [
     },
     targetGoal: 1000,
     currentProgress: 250,
+    isCompleted: false,
   ),
 ];
