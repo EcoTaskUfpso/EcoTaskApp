@@ -135,17 +135,39 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
                 Navigator.of(context).pop();
                 
                 try {
+                  final wasCompleted = goal.isCompleted;
                   await _goalService.addProgress(goal.id, amount);
                   await _loadGoals();
                   
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('✅ ¡${amount.toStringAsFixed(1)} ${_getUnitSuffix(goal.materialType)} registrados!'),
-                        backgroundColor: AppColors.primary,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
+                    // Verificar si se acaba de completar la meta
+                    final updatedGoal = _goals.firstWhere((g) => g.id == goal.id);
+                    if (!wasCompleted && updatedGoal.isCompleted) {
+                      // Celebración por meta completada
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              const Icon(Icons.celebration, color: Colors.white),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text('🎉 ¡Meta completada! Johan ha logrado su objetivo ambiental'),
+                              ),
+                            ],
+                          ),
+                          backgroundColor: Colors.green,
+                          duration: const Duration(seconds: 5),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('✅ ¡${amount.toStringAsFixed(1)} ${_getUnitSuffix(goal.materialType)} registrados!'),
+                          backgroundColor: AppColors.primary,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    }
                   }
                 } catch (e) {
                   if (mounted) {
