@@ -123,6 +123,14 @@ class RecyclingGoalList extends StatelessWidget {
                             color: Colors.grey[600],
                           ),
                         ),
+                        Text(
+                          '${(goal.progress * 100).toStringAsFixed(0)}% completado',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: goal.isCompleted ? Colors.green : AppColors.primary,
+                          ),
+                        ),
                       ],
                     ),
                   ),
