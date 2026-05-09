@@ -140,9 +140,10 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
                   
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Progreso agregado exitosamente'),
+                      SnackBar(
+                        content: Text('✅ ¡${amount.toStringAsFixed(1)} ${_getUnitSuffix(goal.materialType)} registrados!'),
                         backgroundColor: AppColors.primary,
+                        duration: const Duration(seconds: 3),
                       ),
                     );
                   }
