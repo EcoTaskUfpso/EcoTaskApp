@@ -67,21 +67,37 @@ class AuthService {
       case 'weak-password':
         return 'La contraseña es muy débil. Debe tener al menos 6 caracteres.';
       case 'email-already-in-use':
-        return 'Este correo electrónico ya está registrado. Intenta con otro.';
+        return 'Este correo electrónico ya está registrado. Intenta con otro correo o recupera tu contraseña.';
       case 'user-not-found':
-        return 'No existe una cuenta con este correo electrónico.';
+        return 'No existe una cuenta con este correo electrónico. Verifica el correo o regístrate.';
       case 'wrong-password':
-        return 'La contraseña es incorrecta.';
+        return 'La contraseña es incorrecta. Intenta de nuevo o recupera tu contraseña.';
       case 'invalid-email':
-        return 'El correo electrónico no es válido.';
+        return 'El correo electrónico no es válido. Verifica el formato del correo.';
       case 'user-disabled':
-        return 'Esta cuenta ha sido deshabilitada.';
+        return 'Esta cuenta ha sido deshabilitada. Contacta al administrador.';
       case 'too-many-requests':
-        return 'Demasiados intentos fallidos. Por favor intenta más tarde.';
+        return 'Demasiados intentos fallidos. Por favor espera unos minutos antes de intentar nuevamente.';
       case 'operation-not-allowed':
-        return 'Operación no permitida. Contacta al soporte.';
+        return 'Operación no permitida. Esta función está deshabilitada temporalmente.';
+      case 'account-exists-with-different-credential':
+        return 'Ya existe una cuenta con este correo pero usando otro método de inicio de sesión.';
+      case 'invalid-credential':
+        return 'Las credenciales proporcionadas no son válidas o han expirado.';
+      case 'invalid-verification-code':
+        return 'El código de verificación no es válido. Verifica e intenta de nuevo.';
+      case 'invalid-verification-id':
+        return 'El ID de verificación no es válido. Solicita un nuevo código.';
+      case 'network-request-failed':
+        return 'Error de conexión. Verifica tu conexión a internet e intenta de nuevo.';
+      case 'requires-recent-login':
+        return 'Esta operación requiere que inicies sesión nuevamente por seguridad.';
+      case 'session-expired':
+        return 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.';
+      case 'timeout':
+        return 'La operación tardó demasiado tiempo. Verifica tu conexión e intenta de nuevo.';
       default:
-        return 'Error de autenticación: ${e.message}';
+        return 'Error de autenticación: ${e.message ?? 'Error desconocido. Por favor intenta de nuevo.'}';
     }
   }
 }
