@@ -4,6 +4,7 @@ import 'package:to_do_ufpso/firebase_options.dart';
 import 'package:to_do_ufpso/screens/home_screen.dart';
 import 'package:to_do_ufpso/screens/login_screen.dart';
 import 'package:to_do_ufpso/screens/register_screen.dart';
+import 'package:to_do_ufpso/screens/recycling_goals_screen.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 
 Future<void> main() async {
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
+        '/recycling-goals': (context) => const RecyclingGoalsScreen(),
       },
     );
   }
