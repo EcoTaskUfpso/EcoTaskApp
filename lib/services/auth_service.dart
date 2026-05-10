@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -58,6 +60,44 @@ class AuthService {
       throw _getErrorMessage(e);
     } catch (e) {
       throw 'Ocurrió un error inesperado. Por favor intenta de nuevo.';
+    }
+  }
+
+  // Sign in with Google
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      // For both web and mobile, use the same approach
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        // User cancelled the sign-in
+        return null;
+      }
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Create a new credential
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Sign in to Firebase with the Google credential
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      throw _getErrorMessage(e);
+    } catch (e) {
+      // Handle specific Google Sign-In errors
+      if (e.toString().contains('popup_closed') || e.toString().contains('user_cancelled')) {
+        throw 'Inicio de sesión cancelado. Por favor intenta de nuevo.';
+      } else if (e.toString().contains('network') || e.toString().contains('NetworkError')) {
+        throw 'Error de conexión. Verifica tu internet e intenta de nuevo.';
+      } else {
+        throw 'Error al iniciar sesión con Google. Por favor intenta de nuevo.';
+      }
     }
   }
 
