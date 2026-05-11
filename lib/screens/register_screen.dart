@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 import 'package:to_do_ufpso/utils/validators.dart';
 import 'package:to_do_ufpso/widgets/eco_logo.dart';
+import 'package:to_do_ufpso/widgets/google_sign_in_button.dart';
 import 'package:to_do_ufpso/services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -71,15 +72,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await _authService.signInWithGoogle();
+      
+      if (!mounted) return;
+
+      if (result != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Cuenta creada con Google exitosamente!'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   Widget _buildSocialButton({
     required Widget icon,
     required String semanticLabel,
+    VoidCallback? onPressed,
   }) {
     return SizedBox(
       width: 52,
       height: 52,
       child: OutlinedButton(
-        onPressed: () {},
+        onPressed: _isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
           shape: const CircleBorder(),
           padding: EdgeInsets.zero,
@@ -277,17 +316,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     runSpacing: 12,
                     alignment: WrapAlignment.center,
                     children: [
-                      _buildSocialButton(
-                        icon: const FaIcon(FontAwesomeIcons.google),
-                        semanticLabel: 'Google',
+                      GoogleSignInButton(
+                        onPressed: _signInWithGoogle,
+                        isLoading: _isLoading,
                       ),
                       _buildSocialButton(
                         icon: const FaIcon(FontAwesomeIcons.github),
                         semanticLabel: 'GitHub',
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Próximamente: Inicio con GitHub'),
+                              backgroundColor: AppColors.gray,
+                            ),
+                          );
+                        },
                       ),
                       _buildSocialButton(
                         icon: const FaIcon(FontAwesomeIcons.facebookF),
                         semanticLabel: 'Facebook',
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Próximamente: Inicio con Facebook'),
+                              backgroundColor: AppColors.gray,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
