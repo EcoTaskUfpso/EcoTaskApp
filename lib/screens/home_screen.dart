@@ -249,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListView(
             controller: scrollController,
             children: [
-              Row(
+              Column(
                 children: [
                   Container(
                     width: 60,
@@ -264,27 +264,22 @@ class _HomeScreenState extends State<HomeScreen> {
                       size: 32,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          task.title,
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.darkGreen,
-                          ),
-                        ),
-                        Text(
-                          task.category,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.gray,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 16),
+                  Text(
+                    task.title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkGreen,
+                    ),
+                  ),
+                  Text(
+                    task.category,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.gray,
                     ),
                   ),
                 ],
@@ -292,6 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 24),
               Text(
                 'Descripción',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -301,6 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 8),
               Text(
                 task.description,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
                   color: AppColors.gray,
@@ -310,6 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 24),
               Text(
                 'Contadores y Progreso',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -325,10 +323,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   border: Border.all(color: AppColors.lightBlue.withOpacity(0.3)),
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Meta: ${task.targetGoal}',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.darkGreen,
@@ -338,6 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 12),
                     Text(
                       'Progreso actual: ${task.currentProgress}',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.darkGreen,
@@ -345,38 +344,62 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      height: 8,
+                      height: 30,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(4),
+                        color: Colors.grey.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: Colors.black, width: 2),
                       ),
-                      child: FractionallySizedBox(
-                        widthFactor: task.targetGoal > 0 ? (task.currentProgress / task.targetGoal) : 0.0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(4),
+                      child: Stack(
+                        children: [
+                          FractionallySizedBox(
+                            widthFactor: task.targetGoal > 0 ? (task.currentProgress / task.targetGoal) : 0.0,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                            ),
                           ),
-                        ),
+                          Center(
+                            child: Text(
+                              '${task.targetGoal > 0 ? ((task.currentProgress / task.targetGoal) * 100).round() : 0}%',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Contadores específicos:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.darkGreen,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildTaskCounters(task),
-                  ],
+                                      ],
                 ),
               ),
               const SizedBox(height: 24),
               // Botones de acción
               if (!task.isCompleted) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showAddRecycledDialog(context, task);
+                        },
+                        icon: const Icon(Icons.add_circle),
+                        label: Text(_getButtonTextForCategory(task.category)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -432,6 +455,309 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getButtonTextForCategory(String category) {
+    switch (category) {
+      case 'Reciclaje': return 'Agregar Reciclados';
+      case 'Naturaleza': return 'Registrar Acción';
+      case 'Compostaje': return 'Agregar Compost';
+      case 'Limpieza': return 'Registrar Limpieza';
+      case 'Ahorro': return 'Registrar Ahorro';
+      default: return 'Agregar Progreso';
+    }
+  }
+
+  void _showAddRecycledDialog(BuildContext context, EcoTask task) {
+    final quantityController = TextEditingController();
+    String selectedType = task.counters.keys.isNotEmpty ? task.counters.keys.first : 'Objetos';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.primary, AppColors.secondary],
+                        ),
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: const Icon(
+                        Icons.add_circle,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Agregar Objetos Reciclados',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.darkGreen,
+                            ),
+                          ),
+                          Text(
+                            'Registra tu progreso',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.gray,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close, color: AppColors.gray),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Tipo de objeto
+                Text(
+                  'Tipo de objeto',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkGreen,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.primary),
+                    ),
+                  ),
+                  items: task.counters.keys.map((type) {
+                    return DropdownMenuItem(value: type, child: Text(type));
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedType = value!;
+                    });
+                  },
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Cantidad
+                Text(
+                  'Cantidad',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkGreen,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: quantityController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: 'Ej: 5',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Botones
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: BorderSide(color: AppColors.gray),
+                        ),
+                        child: Text(
+                          'Cancelar',
+                          style: TextStyle(color: AppColors.gray),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final quantity = int.tryParse(quantityController.text) ?? 0;
+                          if (quantity > 0) {
+                            _updateTaskProgress(context, task, selectedType, quantity);
+                            Navigator.pop(context);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text('Agregar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _updateTaskProgress(BuildContext context, EcoTask task, String type, int quantity) {
+    final updatedCounters = Map<String, int>.from(task.counters);
+    updatedCounters[type] = (updatedCounters[type] ?? 0) + quantity;
+    
+    final newProgress = task.currentProgress + quantity;
+    final isCompleted = newProgress >= task.targetGoal;
+    
+    final updatedTask = EcoTask(
+      title: task.title,
+      date: task.date,
+      priority: task.priority,
+      category: task.category,
+      description: task.description,
+      icon: task.icon,
+      color: task.color,
+      counters: updatedCounters,
+      targetGoal: task.targetGoal,
+      currentProgress: newProgress,
+      isCompleted: isCompleted,
+    );
+    
+    final taskIndex = _ecoTasks.indexOf(task);
+    if (taskIndex != -1) {
+      setState(() {
+        _ecoTasks[taskIndex] = updatedTask;
+      });
+    }
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✅ ¡Has agregado $quantity $type a tu progreso!'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+    
+    // Si se completó la meta, mostrar felicitación
+    if (isCompleted && !task.isCompleted) {
+      _showCompletionDialog(context, task);
+    }
+  }
+
+  void _showCompletionDialog(BuildContext context, EcoTask task) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green, AppColors.primary],
+                  ),
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                child: const Icon(
+                  Icons.emoji_events,
+                  color: Colors.white,
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                '¡Felicidades!',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.darkGreen,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Has completado tu meta',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: AppColors.gray,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '"${task.title}"',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Lograste reciclar ${task.currentProgress} objetos',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.gray,
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                ),
+                child: const Text('¡Genial!'),
               ),
             ],
           ),
@@ -759,6 +1085,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Variables para control de errores
     bool titleError = false;
     bool dateError = false;
+    int targetGoal = 0;
 
     showDialog(
       context: context,
@@ -1046,6 +1373,35 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   const SizedBox(height: 16),
                   
+                  // Meta
+                  Text(
+                    'Meta (cantidad objetivo)',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: 'Ej: 50 botellas',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.primary),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      targetGoal = int.tryParse(value) ?? 0;
+                    },
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
                   // Repetir
                   Text(
                     'Repetir',
@@ -1232,6 +1588,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 repeatOption: repeatOption,
                                 repeatDays: selectedDays,
                                 repeatDates: selectedDates,
+                                targetGoal: targetGoal,
                               );
                               Navigator.pop(context);
                             }
@@ -1272,6 +1629,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required String repeatOption,
     required List<String> repeatDays,
     required List<int> repeatDates,
+    required int targetGoal,
   }) {
     final newTask = EcoTask(
       title: title,
@@ -1281,6 +1639,9 @@ class _HomeScreenState extends State<HomeScreen> {
       description: description.isEmpty ? 'Sin descripción' : description,
       icon: _getCategoryIcon(category),
       color: _getCategoryColor(category),
+      counters: _getCategoryCounters(category),
+      targetGoal: targetGoal,
+      currentProgress: 0,
       isCompleted: false,
     );
     
@@ -1316,6 +1677,40 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'Limpieza': return AppColors.accent;
       case 'Ahorro': return AppColors.lightBlue;
       default: return AppColors.primary;
+    }
+  }
+
+  Map<String, int> _getCategoryCounters(String category) {
+    switch (category) {
+      case 'Reciclaje':
+        return {
+          'Botellas de plástico': 0,
+          'Envases de cartón': 0,
+          'Papel reciclado': 0,
+        };
+      case 'Naturaleza':
+        return {
+          'Árboles plantados': 0,
+          'Hectáreas reforestadas': 0,
+        };
+      case 'Compostaje':
+        return {
+          'Residuos orgánicos': 0,
+          'Compostaje logrado (kg)': 0,
+        };
+      case 'Limpieza':
+        return {
+          'Envases de plástico': 0,
+          'Residuos de vidrio': 0,
+          'Residuos orgánicos': 0,
+        };
+      case 'Ahorro':
+        return {
+          'Litros de agua ahorrados': 0,
+          'Duchas cortadas': 0,
+        };
+      default:
+        return {'Objetos': 0};
     }
   }
 
@@ -1535,93 +1930,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTaskCounters(EcoTask task) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: task.counters.entries.map((entry) => Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.gray.withOpacity(0.2)),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.add_circle_outline, color: AppColors.primary, size: 16),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                entry.key,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.darkGreen,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 60,
-              height: 24,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: TextField(
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  hintText: '0',
-                  hintStyle: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.gray,
-                  ),
-                ),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.darkGreen,
-                ),
-                onChanged: (value) {
-                  // Actualizar el contador
-                  final newValue = int.tryParse(value) ?? 0;
-                  setState(() {
-                    task.counters[entry.key] = newValue;
-                    // Recalcular el progreso total
-                    int total = 0;
-                    task.counters.forEach((key, value) {
-                      total += value;
-                    });
-                    // Actualizar el progreso creando una nueva tarea con los valores actualizados
-                    final updatedTask = EcoTask(
-                      title: task.title,
-                      date: task.date,
-                      priority: task.priority,
-                      category: task.category,
-                      description: task.description,
-                      icon: task.icon,
-                      color: task.color,
-                      counters: Map.from(task.counters),
-                      targetGoal: task.targetGoal,
-                      currentProgress: total,
-                      isCompleted: task.isCompleted,
-                    );
-                    
-                    // Reemplazar la tarea en la lista
-                    final taskIndex = _ecoTasks.indexOf(task);
-                    if (taskIndex != -1) {
-                      _ecoTasks[taskIndex] = updatedTask;
-                    }
-                  });
-                },
-              ),
-            ),
-          ],
-        ),
-      )).toList(),
-    );
-  }
-
+  
   List<EcoTask> _getTasksThisWeek() {
     final now = DateTime.now();
     final weekEnd = now.add(const Duration(days: 7));
