@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_ufpso/models/coupon.dart';
-import 'package:to_do_ufpso/services/coupon_service.dart';
-import 'package:to_do_ufpso/utils/app_theme.dart';
-import 'package:to_do_ufpso/widgets/eco_logo.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/coupon.dart';
+import '../services/local_coupon_service.dart';
+import '../utils/app_theme.dart';
+import '../widgets/eco_logo.dart';
 
 class CouponsScreen extends StatefulWidget {
   const CouponsScreen({super.key});
@@ -12,29 +13,29 @@ class CouponsScreen extends StatefulWidget {
 }
 
 class _CouponsScreenState extends State<CouponsScreen> {
-  final CouponService _couponService = CouponService();
+  final LocalCouponService _couponService = LocalCouponService();
   List<Coupon> _coupons = [];
   bool _isLoading = true;
-  Map<String, dynamic>? _stats;
+  int _userPoints = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadCoupons();
+    _loadData();
   }
 
-  Future<void> _loadCoupons() async {
+  Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final coupons = await _couponService.getCoupons();
-      final stats = await _couponService.getCouponStats();
+      final coupons = await _couponService.getAvailableCoupons();
+      final userPoints = await _getUserPoints();
       
       setState(() {
         _coupons = coupons;
-        _stats = stats;
+        _userPoints = userPoints;
         _isLoading = false;
       });
     } catch (e) {
@@ -45,7 +46,7 @@ class _CouponsScreenState extends State<CouponsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al cargar los cupones: ${e.toString()}'),
+            content: Text('Error al cargar cupones: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -53,16 +54,30 @@ class _CouponsScreenState extends State<CouponsScreen> {
     }
   }
 
-  Future<void> _useCoupon(Coupon coupon) async {
+  Future<int> _getUserPoints() async {
     try {
-      await _couponService.useCoupon(coupon.id);
-      await _loadCoupons();
+      return await _couponService.getUserPoints();
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  Future<void> _claimCoupon(Coupon coupon) async {
+    try {
+      // Mostrar diálogo de confirmación
+      final confirmed = await _showClaimDialog(coupon);
+      if (!confirmed) return;
+
+      await _couponService.claimCoupon(coupon.id);
+      
+      // Recargar datos
+      await _loadData();
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Cupón ${coupon.code} usado exitosamente'),
-            backgroundColor: Colors.green,
+            content: Text('¡Cupón reclamado exitosamente: ${coupon.title}!'),
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -70,7 +85,7 @@ class _CouponsScreenState extends State<CouponsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al usar cupón: ${e.toString()}'),
+            content: Text('Error al reclamar cupón: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -78,14 +93,58 @@ class _CouponsScreenState extends State<CouponsScreen> {
     }
   }
 
-  void _copyCouponCode(String code) {
-    // Aquí podrías usar un paquete como flutter/services para copiar al portapapeles
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Código $code copiado al portapapeles'),
-        backgroundColor: AppColors.primary,
+  Future<bool> _showClaimDialog(Coupon coupon) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Reclamar Cupón'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('¿Estás seguro de que quieres reclamar este cupón?'),
+            const SizedBox(height: 12),
+            Text(
+              'Tus puntos: $_userPoints',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+            Text(
+              'Puntos requeridos: ${coupon.pointsRequired}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: _userPoints >= coupon.pointsRequired 
+                    ? Colors.green 
+                    : Colors.red,
+              ),
+            ),
+            if (_userPoints < coupon.pointsRequired) ...[
+              const SizedBox(height: 8),
+              Text(
+                'No tienes suficientes puntos para reclamar este cupón.',
+                style: TextStyle(color: Colors.red),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Reclamar'),
+          ),
+        ],
       ),
-    );
+    ) ?? false;
   }
 
   @override
@@ -93,19 +152,19 @@ class _CouponsScreenState extends State<CouponsScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Mis Cupones'),
+        title: const Text('Cupones Disponibles'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadCoupons,
+            onPressed: _loadData,
           ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadCoupons,
+        onRefresh: _loadData,
         color: AppColors.primary,
         child: _isLoading
             ? const Center(
@@ -117,12 +176,22 @@ class _CouponsScreenState extends State<CouponsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Estadísticas
-                    if (_stats != null) _buildStatsCard(),
+                    // Tarjeta de puntos del usuario
+                    _buildPointsCard(),
                     const SizedBox(height: 24),
                     
                     // Lista de cupones
-                    _coupons.isEmpty ? _buildEmptyState() : _buildCouponsList(),
+                    if (_coupons.isEmpty)
+                      _buildEmptyState()
+                    else
+                      Column(
+                        children: _coupons.map((coupon) => 
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _buildCouponCard(coupon),
+                          ),
+                        ).toList(),
+                      ),
                   ],
                 ),
               ),
@@ -130,311 +199,292 @@ class _CouponsScreenState extends State<CouponsScreen> {
     );
   }
 
-  Widget _buildStatsCard() {
+  Widget _buildPointsCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.orange[400]!,
-            Colors.orange[600]!,
+            AppColors.primary,
+            AppColors.secondary,
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.orange.withOpacity(0.3),
+            color: AppColors.primary.withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              const EcoLogo(size: 40),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Recompensas de Johan',
+          const EcoLogo(size: 40),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tus Puntos Ecológicos',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  '$_userPoints puntos disponibles',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  'Total',
-                  '${_stats!['totalCoupons']}',
-                  Icons.card_giftcard,
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'Canjeables',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
               ),
-              Expanded(
-                child: _buildStatItem(
-                  'Válidos',
-                  '${_stats!['validCoupons']}',
-                  Icons.check_circle,
-                ),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  'Usados',
-                  '${_stats!['usedCoupons']}',
-                  Icons.done_all,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: Colors.white,
-          size: 24,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+  Widget _buildCouponCard(Coupon coupon) {
+    final canClaim = _userPoints >= coupon.pointsRequired;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Imagen del cupón
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Image.network(
+              coupon.imageUrl,
+              height: 120,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  height: 120,
+                  color: AppColors.lightBlue.withOpacity(0.3),
+                  child: const Center(
+                    child: Icon(
+                      Icons.local_offer,
+                      size: 48,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Título y empresa
+                Text(
+                  coupon.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkGreen,
+                  ),
+                ),
+                if (coupon.partnerCompany != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Por: ${coupon.partnerCompany}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.gray,
+                    ),
+                  ),
+                ],
+                
+                const SizedBox(height: 8),
+                
+                // Descripción
+                Text(
+                  coupon.description,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.gray,
+                    height: 1.4,
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Tipo y valor
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        coupon.type.displayName,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _getCouponValueText(coupon),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Puntos requeridos y botón
+                Row(
+                  children: [
+                    Icon(
+                      Icons.stars,
+                      color: canClaim ? Colors.amber : Colors.grey,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${coupon.pointsRequired} puntos',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: canClaim ? Colors.amber : Colors.grey,
+                      ),
+                    ),
+                    const Spacer(),
+                    ElevatedButton(
+                      onPressed: canClaim && coupon.isAvailable 
+                          ? () => _claimCoupon(coupon) 
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: canClaim && coupon.isAvailable 
+                            ? AppColors.primary 
+                            : Colors.grey,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16, 
+                          vertical: 8
+                        ),
+                      ),
+                      child: Text(
+                        coupon.isAvailable ? 'Reclamar' : 'No disponible',
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Fecha de expiración
+                const SizedBox(height: 8),
+                Text(
+                  'Vence: ${_formatDate(coupon.expiresAt)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: coupon.isExpired ? Colors.red : AppColors.gray,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildEmptyState() {
     return Container(
       padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.lightBlue.withOpacity(0.3)),
+      ),
       child: Column(
         children: [
           Icon(
-            Icons.card_giftcard_outlined,
-            size: 80,
-            color: Colors.grey[400],
+            Icons.local_offer_outlined,
+            size: 64,
+            color: AppColors.gray,
           ),
           const SizedBox(height: 16),
           Text(
-            'No tienes cupones aún',
+            'No hay cupones disponibles',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
+              color: AppColors.darkGreen,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Completa tus metas de reciclaje para obtener recompensas',
+            'Vuelve pronto para ver nuevas ofertas ecológicas',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: AppColors.gray,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCouponsList() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _coupons.length,
-      itemBuilder: (context, index) {
-        final coupon = _coupons[index];
-        return _buildCouponCard(coupon);
-      },
-    );
-  }
-
-  Widget _buildCouponCard(Coupon coupon) {
-    final isValid = coupon.isValid;
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(
-          color: isValid ? Colors.orange[200]! : Colors.grey[300]!,
-          width: 2,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header con estado
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(coupon),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _getStatusText(coupon),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                if (coupon.type == CouponType.discount)
-                  Text(
-                    '${coupon.value.toStringAsFixed(0)}% OFF',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange[600],
-                    ),
-                  ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Código del cupón
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      coupon.code,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => _copyCouponCode(coupon.code),
-                    icon: const Icon(Icons.copy),
-                    color: AppColors.primary,
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Descripción
-            Text(
-              coupon.description,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Información adicional
-            Row(
-              children: [
-                Icon(
-                  Icons.schedule,
-                  size: 16,
-                  color: Colors.grey[500],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Creado: ${_formatDate(coupon.createdAt)}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
-                ),
-                const Spacer(),
-                if (coupon.expiresAt != null)
-                  Text(
-                    'Expira: ${_formatDate(coupon.expiresAt!)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: coupon.isExpired ? Colors.red : Colors.grey[500],
-                    ),
-                  ),
-              ],
-            ),
-            
-            if (isValid && !coupon.isUsed)
-              const SizedBox(height: 12),
-            
-            // Botón de usar
-            if (isValid && !coupon.isUsed)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => _useCoupon(coupon),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange[600],
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Usar Cupón'),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _getStatusColor(Coupon coupon) {
-    if (coupon.isUsed) return Colors.grey;
-    if (coupon.isExpired) return Colors.red;
-    return Colors.green;
-  }
-
-  String _getStatusText(Coupon coupon) {
-    if (coupon.isUsed) return 'Usado';
-    if (coupon.isExpired) return 'Expirado';
-    return 'Válido';
+  String _getCouponValueText(Coupon coupon) {
+    switch (coupon.type) {
+      case CouponType.discount:
+        return '${coupon.value.toInt()}% descuento';
+      case CouponType.freeProduct:
+        return 'Producto gratis';
+      case CouponType.points:
+        return '${coupon.value.toInt()}x puntos';
+      case CouponType.experience:
+        return 'Experiencia especial';
+    }
   }
 
   String _formatDate(DateTime date) {

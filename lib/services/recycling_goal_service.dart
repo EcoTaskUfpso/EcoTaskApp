@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/recycling_goal.dart';
-import 'coupon_service.dart';
 
 class RecyclingGoalService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -99,28 +98,12 @@ class RecyclingGoalService {
 
       final newAmount = currentGoal.currentAmount + amount;
       final isCompleted = newAmount >= currentGoal.targetAmount;
-      final wasCompleted = currentGoal.isCompleted;
 
       await updateGoal(
         goalId: goalId,
         currentAmount: newAmount,
         isCompleted: isCompleted,
       );
-
-      // Generar cupón si la meta se acaba de completar
-      if (isCompleted && !wasCompleted) {
-        final couponService = CouponService();
-        try {
-          await couponService.generateCouponForCompletedGoal(
-            goalId: goalId,
-            materialType: currentGoal.materialType.displayName,
-            targetAmount: currentGoal.targetAmount,
-          );
-        } catch (e) {
-          // No lanzar error si el cupón ya existe, pero registrar en consola
-          print('Cupón ya existe para esta meta: $e');
-        }
-      }
     } catch (e) {
       throw 'Error al actualizar el progreso: ${e.toString()}';
     }

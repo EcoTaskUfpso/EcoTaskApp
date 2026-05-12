@@ -1,50 +1,159 @@
 enum CouponType {
   discount('Descuento'),
   freeProduct('Producto Gratis'),
-  points('Puntos Extra');
+  points('Puntos Extra'),
+  experience('Experiencia Ecológica');
 
   const CouponType(this.displayName);
   final String displayName;
 }
 
+enum CouponStatus {
+  available('Disponible'),
+  claimed('Reclamado'),
+  used('Usado'),
+  expired('Expirado');
+
+  const CouponStatus(this.displayName);
+  final String displayName;
+}
+
 class Coupon {
   final String id;
-  final String code;
-  final CouponType type;
-  final double value;
+  final String title;
   final String description;
+  final CouponType type;
+  final double value; // Valor del descuento o puntos
+  final String? partnerCompany; // Empresa colaboradora
+  final String imageUrl;
+  final String code;
+  final int pointsRequired; // Puntos necesarios para reclamar
   final DateTime createdAt;
-  final DateTime? expiresAt;
-  final bool isUsed;
-  final String? goalId; // ID de la meta que generó este cupón
-  final String? materialType; // Tipo de material reciclado
+  final DateTime expiresAt;
+  final DateTime? claimedAt;
+  final DateTime? usedAt;
+  final CouponStatus status;
+  final List<String> terms; // Términos y condiciones
 
   Coupon({
     required this.id,
-    required this.code,
+    required this.title,
+    required this.description,
     required this.type,
     required this.value,
-    required this.description,
+    this.partnerCompany,
+    required this.imageUrl,
+    required this.code,
+    required this.pointsRequired,
     required this.createdAt,
-    this.expiresAt,
-    this.isUsed = false,
-    this.goalId,
-    this.materialType,
+    required this.expiresAt,
+    this.claimedAt,
+    this.usedAt,
+    required this.status,
+    required this.terms,
   });
 
+  // Verificar si el cupón está disponible para reclamar
+  bool get isAvailable => 
+      status == CouponStatus.available && 
+      DateTime.now().isBefore(expiresAt);
+
   // Verificar si el cupón está expirado
-  bool get isExpired {
-    if (expiresAt == null) return false;
-    return DateTime.now().isAfter(expiresAt!);
+  bool get isExpired => DateTime.now().isAfter(expiresAt);
+
+  // Verificar si el cupón puede ser usado
+  bool get canBeUsed => 
+      status == CouponStatus.claimed && 
+      !isExpired &&
+      usedAt == null;
+
+  // Crear copia con valores actualizados
+  Coupon copyWith({
+    String? id,
+    String? title,
+    String? description,
+    CouponType? type,
+    double? value,
+    String? partnerCompany,
+    String? imageUrl,
+    String? code,
+    int? pointsRequired,
+    DateTime? createdAt,
+    DateTime? expiresAt,
+    DateTime? claimedAt,
+    DateTime? usedAt,
+    CouponStatus? status,
+    List<String>? terms,
+  }) {
+    return Coupon(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      type: type ?? this.type,
+      value: value ?? this.value,
+      partnerCompany: partnerCompany ?? this.partnerCompany,
+      imageUrl: imageUrl ?? this.imageUrl,
+      code: code ?? this.code,
+      pointsRequired: pointsRequired ?? this.pointsRequired,
+      createdAt: createdAt ?? this.createdAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+      claimedAt: claimedAt ?? this.claimedAt,
+      usedAt: usedAt ?? this.usedAt,
+      status: status ?? this.status,
+      terms: terms ?? this.terms,
+    );
   }
 
-  // Verificar si el cupón es válido (no usado y no expirado)
-  bool get isValid {
-    return !isUsed && !isExpired;
+  // Convertir a mapa para Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'type': type.name,
+      'value': value,
+      'partnerCompany': partnerCompany,
+      'imageUrl': imageUrl,
+      'code': code,
+      'pointsRequired': pointsRequired,
+      'createdAt': createdAt.toIso8601String(),
+      'expiresAt': expiresAt.toIso8601String(),
+      'claimedAt': claimedAt?.toIso8601String(),
+      'usedAt': usedAt?.toIso8601String(),
+      'status': status.name,
+      'terms': terms,
+    };
   }
 
-  // Generar código único
-  static String generateCode() {
+  // Crear desde mapa de Firestore
+  factory Coupon.fromMap(Map<String, dynamic> map) {
+    return Coupon(
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      description: map['description'] ?? '',
+      type: CouponType.values.firstWhere(
+        (type) => type.name == map['type'],
+        orElse: () => CouponType.discount,
+      ),
+      value: (map['value'] ?? 0.0).toDouble(),
+      partnerCompany: map['partnerCompany'],
+      imageUrl: map['imageUrl'] ?? '',
+      code: map['code'] ?? '',
+      pointsRequired: map['pointsRequired'] ?? 0,
+      createdAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String()),
+      expiresAt: DateTime.parse(map['expiresAt'] ?? DateTime.now().toIso8601String()),
+      claimedAt: map['claimedAt'] != null ? DateTime.parse(map['claimedAt']) : null,
+      usedAt: map['usedAt'] != null ? DateTime.parse(map['usedAt']) : null,
+      status: CouponStatus.values.firstWhere(
+        (status) => status.name == map['status'],
+        orElse: () => CouponStatus.available,
+      ),
+      terms: List<String>.from(map['terms'] ?? []),
+    );
+  }
+
+  // Generar código aleatorio para cupón
+  static String generateCouponCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final random = DateTime.now().millisecondsSinceEpoch;
     final code = StringBuffer();
@@ -53,101 +162,6 @@ class Coupon {
       code.write(chars[(random + i) % chars.length]);
     }
     
-    return 'ECO-${code.toString()}';
-  }
-
-  // Crear copia con valores actualizados
-  Coupon copyWith({
-    String? id,
-    String? code,
-    CouponType? type,
-    double? value,
-    String? description,
-    DateTime? createdAt,
-    DateTime? expiresAt,
-    bool? isUsed,
-    String? goalId,
-    String? materialType,
-  }) {
-    return Coupon(
-      id: id ?? this.id,
-      code: code ?? this.code,
-      type: type ?? this.type,
-      value: value ?? this.value,
-      description: description ?? this.description,
-      createdAt: createdAt ?? this.createdAt,
-      expiresAt: expiresAt ?? this.expiresAt,
-      isUsed: isUsed ?? this.isUsed,
-      goalId: goalId ?? this.goalId,
-      materialType: materialType ?? this.materialType,
-    );
-  }
-
-  // Convertir a mapa para Firestore
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'code': code,
-      'type': type.name,
-      'value': value,
-      'description': description,
-      'createdAt': createdAt.toIso8601String(),
-      'expiresAt': expiresAt?.toIso8601String(),
-      'isUsed': isUsed,
-      'goalId': goalId,
-      'materialType': materialType,
-    };
-  }
-
-  // Crear desde mapa de Firestore
-  factory Coupon.fromMap(Map<String, dynamic> map) {
-    return Coupon(
-      id: map['id'] ?? '',
-      code: map['code'] ?? '',
-      type: CouponType.values.firstWhere(
-        (type) => type.name == map['type'],
-        orElse: () => CouponType.discount,
-      ),
-      value: (map['value'] ?? 0.0).toDouble(),
-      description: map['description'] ?? '',
-      createdAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String()),
-      expiresAt: map['expiresAt'] != null ? DateTime.parse(map['expiresAt']) : null,
-      isUsed: map['isUsed'] ?? false,
-      goalId: map['goalId'],
-      materialType: map['materialType'],
-    );
-  }
-
-  // Crear cupón automáticamente al completar meta
-  factory Coupon.fromCompletedGoal({
-    required String goalId,
-    required String materialType,
-    required double targetAmount,
-  }) {
-    final now = DateTime.now();
-    final expiresAt = now.add(const Duration(days: 30)); // Expira en 30 días
-    
-    // Calcular valor del cupón basado en la meta
-    final discountPercentage = _calculateDiscountPercentage(targetAmount);
-    
-    return Coupon(
-      id: 'coupon_${now.millisecondsSinceEpoch}',
-      code: generateCode(),
-      type: CouponType.discount,
-      value: discountPercentage,
-      description: '¡Felicidades Johan! Por reciclar ${targetAmount.toStringAsFixed(1)} unidades de $materialType, obtienes ${discountPercentage.toStringAsFixed(0)}% de descuento.',
-      createdAt: now,
-      expiresAt: expiresAt,
-      goalId: goalId,
-      materialType: materialType,
-    );
-  }
-
-  // Calcular porcentaje de descuento basado en la meta
-  static double _calculateDiscountPercentage(double targetAmount) {
-    if (targetAmount >= 100) return 20.0; // 20% para metas grandes
-    if (targetAmount >= 50) return 15.0;  // 15% para metas medianas
-    if (targetAmount >= 20) return 10.0;  // 10% para metas pequeñas
-    return 5.0; // 5% para metas mínimas
+    return code.toString();
   }
 }

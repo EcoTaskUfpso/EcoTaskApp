@@ -6,46 +6,21 @@ class CouponService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Referencia a la colección de cupones del usuario actual
-  CollectionReference get _couponsCollection {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) throw Exception('Usuario no autenticado');
-    return _firestore.collection('users').doc(userId).collection('coupons');
-  }
+  // Referencia a las colecciones
+  CollectionReference get _availableCoupons => 
+      _firestore.collection('available_coupons');
+  
+  CollectionReference get _userCoupons => 
+      _firestore.collection('users').doc(_auth.currentUser?.uid).collection('coupons');
 
-  // Generar cupón al completar una meta
-  Future<String> generateCouponForCompletedGoal({
-    required String goalId,
-    required String materialType,
-    required double targetAmount,
-  }) async {
+  CollectionReference get _usersCollection => 
+      _firestore.collection('users');
+
+  // Obtener todos los cupones disponibles
+  Future<List<Coupon>> getAvailableCoupons() async {
     try {
-      // Verificar si ya existe un cupón para esta meta
-      final existingCoupons = await _couponsCollection
-          .where('goalId', isEqualTo: goalId)
-          .get();
-
-      if (existingCoupons.docs.isNotEmpty) {
-        throw Exception('Ya existe un cupón para esta meta');
-      }
-
-      final coupon = Coupon.fromCompletedGoal(
-        goalId: goalId,
-        materialType: materialType,
-        targetAmount: targetAmount,
-      );
-
-      await _couponsCollection.doc(coupon.id).set(coupon.toMap());
-      return coupon.code;
-    } catch (e) {
-      throw 'Error al generar cupón: ${e.toString()}';
-    }
-  }
-
-  // Obtener todos los cupones del usuario
-  Future<List<Coupon>> getCoupons() async {
-    try {
-      final snapshot = await _couponsCollection
+      final snapshot = await _availableCoupons
+          .where('status', isEqualTo: 'available')
           .orderBy('createdAt', descending: true)
           .get();
 
@@ -53,121 +28,221 @@ class CouponService {
           .map((doc) => Coupon.fromMap(doc.data() as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      throw 'Error al obtener los cupones: ${e.toString()}';
+      throw Exception('Error al cargar cupones disponibles: $e');
     }
   }
 
-  // Obtener cupones válidos (no usados y no expirados)
-  Future<List<Coupon>> getValidCoupons() async {
+  // Obtener los cupones del usuario
+  Future<List<Coupon>> getUserCoupons() async {
     try {
-      final allCoupons = await getCoupons();
-      return allCoupons.where((coupon) => coupon.isValid).toList();
-    } catch (e) {
-      throw 'Error al obtener cupones válidos: ${e.toString()}';
-    }
-  }
-
-  // Obtener un cupón específico
-  Future<Coupon?> getCoupon(String couponId) async {
-    try {
-      final doc = await _couponsCollection.doc(couponId).get();
-      if (!doc.exists) return null;
-
-      return Coupon.fromMap(doc.data() as Map<String, dynamic>);
-    } catch (e) {
-      throw 'Error al obtener el cupón: ${e.toString()}';
-    }
-  }
-
-  // Buscar cupón por código
-  Future<Coupon?> getCouponByCode(String code) async {
-    try {
-      final snapshot = await _couponsCollection
-          .where('code', isEqualTo: code.toUpperCase())
+      final snapshot = await _userCoupons
+          .orderBy('claimedAt', descending: true)
           .get();
 
-      if (snapshot.docs.isEmpty) return null;
-
-      return Coupon.fromMap(snapshot.docs.first.data() as Map<String, dynamic>);
+      return snapshot.docs
+          .map((doc) => Coupon.fromMap(doc.data() as Map<String, dynamic>))
+          .toList();
     } catch (e) {
-      throw 'Error al buscar cupón por código: ${e.toString()}';
+      throw Exception('Error al cargar cupones del usuario: $e');
     }
   }
 
-  // Marcar cupón como usado
-  Future<void> useCoupon(String couponId) async {
+  // Reclamar un cupón
+  Future<void> claimCoupon(String couponId) async {
     try {
-      final coupon = await getCoupon(couponId);
-      if (coupon == null) throw Exception('Cupón no encontrado');
-      if (coupon.isUsed) throw Exception('Cupón ya fue usado');
-      if (coupon.isExpired) throw Exception('Cupón expirado');
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('Usuario no autenticado');
 
-      await _couponsCollection.doc(couponId).update({
-        'isUsed': true,
-        'usedAt': DateTime.now().toIso8601String(),
+      // Obtener el cupón disponible
+      final couponDoc = await _availableCoupons.doc(couponId).get();
+      if (!couponDoc.exists) throw Exception('Cupón no encontrado');
+
+      final coupon = Coupon.fromMap(couponDoc.data() as Map<String, dynamic>);
+      
+      if (!coupon.isAvailable) {
+        throw Exception('El cupón ya no está disponible');
+      }
+
+      // Verificar si el usuario tiene suficientes puntos
+      final userDoc = await _usersCollection.doc(user.uid).get();
+      final userPoints = userDoc.data()?['ecoPoints'] ?? 0;
+
+      if (userPoints < coupon.pointsRequired) {
+        throw Exception('No tienes suficientes puntos para reclamar este cupón');
+      }
+
+      // Realizar la transacción
+      await _firestore.runTransaction((transaction) async {
+        // Descontar puntos del usuario
+        transaction.update(_usersCollection.doc(user.uid), {
+          'ecoPoints': FieldValue.increment(-coupon.pointsRequired)
+        });
+
+        // Actualizar estado del cupón disponible
+        transaction.update(_availableCoupons.doc(couponId), {
+          'status': 'claimed',
+          'claimedAt': DateTime.now().toIso8601String(),
+          'claimedBy': user.uid
+        });
+
+        // Crear copia del cupón para el usuario
+        final userCoupon = coupon.copyWith(
+          status: CouponStatus.claimed,
+          claimedAt: DateTime.now(),
+        );
+
+        transaction.set(_userCoupons.doc(couponId), userCoupon.toMap());
       });
     } catch (e) {
-      throw 'Error al usar cupón: ${e.toString()}';
+      throw Exception('Error al reclamar cupón: $e');
     }
   }
 
-  // Eliminar un cupón
-  Future<void> deleteCoupon(String couponId) async {
+  // Usar un cupón
+  Future<void> useCoupon(String couponId) async {
     try {
-      await _couponsCollection.doc(couponId).delete();
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('Usuario no autenticado');
+
+      // Obtener el cupón del usuario
+      final couponDoc = await _userCoupons.doc(couponId).get();
+      if (!couponDoc.exists) throw Exception('Cupón no encontrado');
+
+      final coupon = Coupon.fromMap(couponDoc.data() as Map<String, dynamic>);
+      
+      if (!coupon.canBeUsed) {
+        throw Exception('Este cupón no puede ser usado');
+      }
+
+      // Actualizar estado del cupón a usado
+      await _userCoupons.doc(couponId).update({
+        'status': 'used',
+        'usedAt': DateTime.now().toIso8601String()
+      });
+
+      // Otorgar puntos adicionales por usar el cupón (bonus)
+      await _usersCollection.doc(user.uid).update({
+        'ecoPoints': FieldValue.increment(10) // 10 puntos bonus
+      });
     } catch (e) {
-      throw 'Error al eliminar cupón: ${e.toString()}';
+      throw Exception('Error al usar cupón: $e');
     }
   }
 
-  // Stream para escuchar cambios en los cupones en tiempo real
-  Stream<List<Coupon>> getCouponsStream() {
-    return _couponsCollection
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Coupon.fromMap(doc.data() as Map<String, dynamic>))
-            .toList());
-  }
-
-  // Obtener estadísticas de cupones
+  // Obtener estadísticas de cupones del usuario
   Future<Map<String, dynamic>> getCouponStats() async {
     try {
-      final coupons = await getCoupons();
-      
-      int totalCoupons = coupons.length;
-      int usedCoupons = coupons.where((coupon) => coupon.isUsed).length;
-      int expiredCoupons = coupons.where((coupon) => coupon.isExpired).length;
-      int validCoupons = coupons.where((coupon) => coupon.isValid).length;
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('Usuario no autenticado');
 
-      // Calcular valor total de descuentos
-      double totalDiscountValue = coupons
-          .where((coupon) => coupon.type == CouponType.discount)
-          .fold(0.0, (sum, coupon) => sum + coupon.value);
+      final snapshot = await _userCoupons.get();
+      final coupons = snapshot.docs
+          .map((doc) => Coupon.fromMap(doc.data() as Map<String, dynamic>))
+          .toList();
+
+      final available = coupons.where((c) => c.status == CouponStatus.claimed && !c.isExpired).length;
+      final used = coupons.where((c) => c.status == CouponStatus.used).length;
+      final expired = coupons.where((c) => c.isExpired).length;
 
       return {
-        'totalCoupons': totalCoupons,
-        'usedCoupons': usedCoupons,
-        'expiredCoupons': expiredCoupons,
-        'validCoupons': validCoupons,
-        'totalDiscountValue': totalDiscountValue,
-        'averageDiscount': totalCoupons > 0 ? totalDiscountValue / totalCoupons : 0.0,
+        'total': coupons.length,
+        'available': available,
+        'used': used,
+        'expired': expired,
       };
     } catch (e) {
-      throw 'Error al obtener estadísticas de cupones: ${e.toString()}';
+      throw Exception('Error al obtener estadísticas: $e');
     }
   }
 
-  // Verificar si una meta ya tiene cupón generado
-  Future<bool> hasCouponForGoal(String goalId) async {
+  // Crear cupones de ejemplo (solo para desarrollo)
+  Future<void> createSampleCoupons() async {
     try {
-      final snapshot = await _couponsCollection
-          .where('goalId', isEqualTo: goalId)
-          .get();
+      final sampleCoupons = [
+        Coupon(
+          id: 'coupon_1',
+          title: '20% de descuento en tienda ecológica',
+          description: 'Obtén 20% de descuento en tu próxima compra en Tienda Verde',
+          type: CouponType.discount,
+          value: 20.0,
+          partnerCompany: 'Tienda Verde',
+          imageUrl: 'https://picsum.photos/seed/green-store/200/120',
+          code: Coupon.generateCouponCode(),
+          pointsRequired: 100,
+          createdAt: DateTime.now(),
+          expiresAt: DateTime.now().add(const Duration(days: 30)),
+          status: CouponStatus.available,
+          terms: [
+            'Válido por 20% de descuento en productos seleccionados',
+            'No acumulable con otras promociones',
+            'Válido por 30 días desde la reclamación',
+            'Máximo 1 uso por cliente'
+          ],
+        ),
+        Coupon(
+          id: 'coupon_2',
+          title: 'Bolsa de tela reutilizable gratis',
+          description: 'Recibe una bolsa de tela ecológica completamente gratis',
+          type: CouponType.freeProduct,
+          value: 1.0,
+          partnerCompany: 'EcoBag Store',
+          imageUrl: 'https://picsum.photos/seed/eco-bag/200/120',
+          code: Coupon.generateCouponCode(),
+          pointsRequired: 50,
+          createdAt: DateTime.now(),
+          expiresAt: DateTime.now().add(const Duration(days: 15)),
+          status: CouponStatus.available,
+          terms: [
+            'Bolsa de tela 100% algodón orgánico',
+            'Retiro en tienda física',
+            'Válido por 15 días desde la reclamación',
+            'Sujeto a disponibilidad'
+          ],
+        ),
+        Coupon(
+          id: 'coupon_3',
+          title: 'Doble de puntos en próxima actividad',
+          description: 'Gana el doble de puntos en tu próxima tarea ecológica completada',
+          type: CouponType.points,
+          value: 2.0,
+          imageUrl: 'https://picsum.photos/seed/double-points/200/120',
+          code: Coupon.generateCouponCode(),
+          pointsRequired: 75,
+          createdAt: DateTime.now(),
+          expiresAt: DateTime.now().add(const Duration(days: 7)),
+          status: CouponStatus.available,
+          terms: [
+            'Válido para duplicar puntos en 1 tarea',
+            'Aplicable solo para tareas completadas en 7 días',
+            'No acumulable con otros bonificadores',
+            'Máximo 1 uso por usuario'
+          ],
+        ),
+      ];
 
-      return snapshot.docs.isNotEmpty;
+      for (final coupon in sampleCoupons) {
+        await _availableCoupons.doc(coupon.id).set(coupon.toMap());
+      }
     } catch (e) {
-      throw 'Error al verificar cupón para meta: ${e.toString()}';
+      throw Exception('Error al crear cupones de ejemplo: $e');
+    }
+  }
+
+  // Eliminar cupón (admin function)
+  Future<void> deleteCoupon(String couponId) async {
+    try {
+      await _availableCoupons.doc(couponId).delete();
+    } catch (e) {
+      throw Exception('Error al eliminar cupón: $e');
+    }
+  }
+
+  // Actualizar cupón (admin function)
+  Future<void> updateCoupon(Coupon coupon) async {
+    try {
+      await _availableCoupons.doc(coupon.id).update(coupon.toMap());
+    } catch (e) {
+      throw Exception('Error al actualizar cupón: $e');
     }
   }
 }
