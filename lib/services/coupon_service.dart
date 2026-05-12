@@ -65,7 +65,7 @@ class CouponService {
 
       // Verificar si el usuario tiene suficientes puntos
       final userDoc = await _usersCollection.doc(user.uid).get();
-      final userPoints = userDoc.data()?['ecoPoints'] ?? 0;
+      final userPoints = (userDoc.data() as Map<String, dynamic>)?['ecoPoints'] ?? 0;
 
       if (userPoints < coupon.pointsRequired) {
         throw Exception('No tienes suficientes puntos para reclamar este cupón');

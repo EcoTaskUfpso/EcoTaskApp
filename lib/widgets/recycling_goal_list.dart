@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_ufpso/models/recycling_goal.dart';
+import 'package:to_do_ufpso/models/recycling_goal.dart' as models;
 import 'package:to_do_ufpso/utils/app_theme.dart';
 
 class RecyclingGoalList extends StatelessWidget {
-  final List<RecyclingGoal> goals;
-  final Function(RecyclingGoal)? onTap;
-  final Function(RecyclingGoal)? onDelete;
-  final Function(RecyclingGoal)? onAddProgress;
-  final Function(RecyclingGoal)? onEdit;
+  final List<models.RecyclingGoal> goals;
+  final Function(models.RecyclingGoal)? onTap;
+  final Function(models.RecyclingGoal)? onDelete;
+  final Function(models.RecyclingGoal)? onAddProgress;
+  final Function(models.RecyclingGoal)? onEdit;
 
   const RecyclingGoalList({
     super.key,
@@ -68,7 +68,7 @@ class RecyclingGoalList extends StatelessWidget {
     );
   }
 
-  Widget _buildGoalCard(BuildContext context, RecyclingGoal goal) {
+  Widget _buildGoalCard(BuildContext context, models.RecyclingGoal goal) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -76,7 +76,7 @@ class RecyclingGoalList extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -96,7 +96,7 @@ class RecyclingGoalList extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -115,7 +115,7 @@ class RecyclingGoalList extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: AppColors.black,
                           ),
                         ),
                         Text(
@@ -268,7 +268,7 @@ class RecyclingGoalList extends StatelessWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, RecyclingGoal goal) {
+  void _showDeleteConfirmation(BuildContext context, models.RecyclingGoal goal) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -296,24 +296,24 @@ class RecyclingGoalList extends StatelessWidget {
     );
   }
 
-  IconData _getMaterialIcon(MaterialType material) {
+  IconData _getMaterialIcon(models.MaterialType material) {
     switch (material) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return Icons.local_drink;
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return Icons.description;
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
         return Icons.inventory_2;
     }
   }
 
-  String _getUnitSuffix(MaterialType material) {
+  String _getUnitSuffix(models.MaterialType material) {
     switch (material) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return 'unidades';
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return 'kg';
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
         return 'unidades';
     }
   }

@@ -15,24 +15,44 @@ class EcoPointsService {
       if (user == null) return 0;
 
       final userDoc = await _usersCollection.doc(user.uid).get();
-      return userDoc.data()?['ecoPoints'] ?? 0;
+      return (userDoc.data() as Map<String, dynamic>)['ecoPoints'] ?? 0;
     } catch (e) {
       throw Exception('Error al obtener puntos: $e');
     }
   }
 
+  // Otorgar puntos ecológicos automáticamente al completar tareas
+  Future<void> _awardEcoPoints() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      // Puntos ecológicos base por completar cualquier tarea
+      const baseEcoPoints = 10;
+      
+      await _usersCollection.doc(user.uid).update({
+        'ecoPoints': FieldValue.increment(baseEcoPoints),
+        'lastEcoActivity': DateTime.now().toIso8601String(),
+      });
+
+      print('¡Felicidades! Has ganado $baseEcoPoints puntos ecológicos por completar una tarea.');
+    } catch (e) {
+      print('Error al otorgar puntos ecológicos: $e');
+    }
+  }
+
   // Añadir puntos por completar tarea
-  Future<void> addPointsForTask(String taskId, int difficulty) async {
+  Future<void> addPointsForTask(String taskId, int difficulty, {int priority = 1}) async {
     try {
       final user = _auth.currentUser;
       if (user == null) throw Exception('Usuario no autenticado');
 
-      // Calcular puntos basados en dificultad
-      int pointsEarned = _calculatePoints(difficulty);
+      // Calcular puntos basados en dificultad y prioridad
+      int pointsEarned = _calculatePoints(difficulty, priority: priority);
 
       // Verificar si la tarea ya fue completada antes
       final userDoc = await _usersCollection.doc(user.uid).get();
-      final completedTasks = List<String>.from(userDoc.data()?['completedTasks'] ?? []);
+      final completedTasks = List<String>.from((userDoc.data() as Map<String, dynamic>)['completedTasks'] ?? []);
       
       if (completedTasks.contains(taskId)) {
         throw Exception('Esta tarea ya fue completada anteriormente');
@@ -58,6 +78,7 @@ class EcoPointsService {
           'taskId': taskId,
           'pointsEarned': pointsEarned,
           'difficulty': difficulty,
+          'priority': priority,
           'type': 'task_completion',
           'createdAt': DateTime.now().toIso8601String(),
         });
@@ -133,11 +154,11 @@ class EcoPointsService {
       if (user == null) return {};
 
       final userDoc = await _usersCollection.doc(user.uid).get();
-      final data = userDoc.data() ?? {};
+      final data = userDoc.data() as Map<String, dynamic>? ?? {};
 
       return {
         'totalPoints': data['ecoPoints'] ?? 0,
-        'completedTasks': data['completedTasks']?.length ?? 0,
+        'completedTasks': (data['completedTasks'] as List?)?.length ?? 0,
         'totalRecycled': data['totalRecycled'] ?? 0.0,
         'lastTaskCompleted': data['lastTaskCompleted'],
         'lastRecyclingActivity': data['lastRecyclingActivity'],
@@ -187,18 +208,48 @@ class EcoPointsService {
     }
   }
 
-  // Calcular puntos basados en dificultad
-  int _calculatePoints(int difficulty) {
+  // Calcular puntos basados en dificultad y prioridad
+  int _calculatePoints(int difficulty, {int priority = 1}) {
+    int basePoints;
+    
+    // Puntos base por dificultad
     switch (difficulty) {
       case 1: // Fácil
-        return 10;
+        basePoints = 10;
+        break;
       case 2: // Medio
-        return 25;
+        basePoints = 25;
+        break;
       case 3: // Difícil
-        return 50;
+        basePoints = 50;
+        break;
       default:
-        return 15;
+        basePoints = 15;
     }
+    
+    // Bonificación por prioridad (más alta = más puntos)
+    double priorityBonus = 1.0;
+    switch (priority) {
+      case 1: // Baja prioridad
+        priorityBonus = 1.0;
+        break;
+      case 2: // Media prioridad
+        priorityBonus = 1.5;
+        break;
+      case 3: // Alta prioridad
+        priorityBonus = 2.0;
+        break;
+      case 4: // Urgente
+        priorityBonus = 3.0;
+        break;
+      default:
+        priorityBonus = 1.0;
+    }
+    
+    int totalPoints = (basePoints * priorityBonus).round();
+    print('Tarea dificultad $difficulty, prioridad $priority: $basePoints puntos base × $priorityBonus bonificación = $totalPoints puntos totales');
+    
+    return totalPoints;
   }
 
   // Calcular puntos de reciclaje
@@ -224,23 +275,27 @@ class EcoPointsService {
     return (basePoints * amount).round();
   }
 
-  // Canjear puntos por cupón (manejado en CouponService)
-  // Este método es solo para referencia
-  Future<void> redeemPoints(int points) async {
+  // Obtener tareas por prioridad
+  Future<List<Map<String, dynamic>>> getTasksByPriority() async {
     try {
       final user = _auth.currentUser;
-      if (user == null) throw Exception('Usuario no autenticado');
+      if (user == null) return [];
 
-      final currentPoints = await getUserPoints();
-      if (currentPoints < points) {
-        throw Exception('No tienes suficientes puntos');
-      }
+      final snapshot = await _usersCollection
+          .doc(user.uid)
+          .collection('point_activities')
+          .where('type', isEqualTo: 'task_completion')
+          .orderBy('priority', descending: true)
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
 
-      await _usersCollection.doc(user.uid).update({
-        'ecoPoints': FieldValue.increment(-points),
-      });
+      return snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
     } catch (e) {
-      throw Exception('Error al canjear puntos: $e');
+      print('Error al obtener tareas por prioridad: $e');
+      return [];
     }
   }
 }

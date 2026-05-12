@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_ufpso/models/recycling_goal.dart';
+import 'package:to_do_ufpso/models/recycling_goal.dart' as models;
 import 'package:to_do_ufpso/services/recycling_goal_service.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 import 'package:to_do_ufpso/widgets/eco_logo.dart';
 
 class EditGoalScreen extends StatefulWidget {
-  final RecyclingGoal goal;
+  final models.RecyclingGoal goal;
 
   const EditGoalScreen({super.key, required this.goal});
 
@@ -18,10 +18,10 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
   final _amountController = TextEditingController();
   final RecyclingGoalService _goalService = RecyclingGoalService();
 
-  MaterialType _selectedMaterial;
+  models.MaterialType _selectedMaterial;
   bool _isLoading = false;
 
-  _EditGoalScreenState() : _selectedMaterial = MaterialType.bottles;
+  _EditGoalScreenState() : _selectedMaterial = models.MaterialType.bottles;
 
   @override
   void initState() {
@@ -126,7 +126,7 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Meta actual: ${widget.goal.materialType.displayName} - ${widget.goal.targetAmount.toStringAsFixed(1)} ${_getUnitSuffix(widget.goal.materialType)}',
+                      'Meta actual: ${widget.goal.materialType.displayName} - ${widget.goal.targetAmount.toStringAsFixed(1)} ${_getUnitSuffixForType(widget.goal.materialType)}',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
@@ -145,7 +145,7 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: AppColors.black,
                 ),
               ),
               const SizedBox(height: 12),
@@ -156,15 +156,15 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Column(
-                  children: MaterialType.values.map((material) {
-                    return RadioListTile<MaterialType>(
+                  children: models.MaterialType.values.map((material) {
+                    return RadioListTile<models.MaterialType>(
                       title: Row(
                         children: [
                           Icon(
@@ -184,7 +184,7 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
                       ),
                       value: material,
                       groupValue: _selectedMaterial,
-                      onChanged: (MaterialType? value) {
+                      onChanged: (models.MaterialType? value) {
                         setState(() {
                           _selectedMaterial = value!;
                         });
@@ -203,7 +203,7 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: AppColors.black,
                 ),
               ),
               const SizedBox(height: 12),
@@ -277,7 +277,7 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Reciclado: ${widget.goal.currentAmount.toStringAsFixed(1)} ${_getUnitSuffix(widget.goal.materialType)}',
+                      'Reciclado: ${widget.goal.currentAmount.toStringAsFixed(1)} ${_getUnitSuffixForType(widget.goal.materialType)}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.blue[600],
@@ -349,13 +349,13 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
     );
   }
 
-  IconData _getMaterialIcon(MaterialType material) {
+  IconData _getMaterialIcon(models.MaterialType material) {
     switch (material) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return Icons.local_drink;
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return Icons.description;
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
         return Icons.inventory_2;
     }
   }
@@ -364,17 +364,13 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
     return _getUnitSuffixForType(_selectedMaterial);
   }
 
-  String _getUnitSuffix(MaterialType material) {
-    return _getUnitSuffixForType(material);
-  }
-
-  String _getUnitSuffixForType(MaterialType material) {
+  String _getUnitSuffixForType(models.MaterialType material) {
     switch (material) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return 'unidades';
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return 'kg';
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
         return 'unidades';
     }
   }
