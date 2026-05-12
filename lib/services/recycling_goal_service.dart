@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/recycling_goal.dart';
+import '../models/recycling_goal.dart' as models;
 
 class RecyclingGoalService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -15,7 +15,7 @@ class RecyclingGoalService {
 
   // Crear una nueva meta de reciclaje
   Future<String> createGoal({
-    required MaterialType materialType,
+    required models.MaterialType materialType,
     required double targetAmount,
   }) async {
     try {
@@ -24,7 +24,7 @@ class RecyclingGoalService {
 
       final goalId = _firestore.collection('users').doc(userId).collection('recycling_goals').doc().id;
       
-      final goal = RecyclingGoal(
+      final goal = models.RecyclingGoal(
         id: goalId,
         materialType: materialType,
         targetAmount: targetAmount,
@@ -39,14 +39,14 @@ class RecyclingGoalService {
   }
 
   // Obtener todas las metas del usuario
-  Future<List<RecyclingGoal>> getGoals() async {
+  Future<List<models.RecyclingGoal>> getGoals() async {
     try {
       final snapshot = await _goalsCollection
           .orderBy('createdAt', descending: true)
           .get();
 
       return snapshot.docs
-          .map((doc) => RecyclingGoal.fromMap(doc.data() as Map<String, dynamic>))
+          .map((doc) => models.RecyclingGoal.fromMap(doc.data() as Map<String, dynamic>))
           .toList();
     } catch (e) {
       throw 'Error al obtener las metas: ${e.toString()}';
@@ -54,12 +54,12 @@ class RecyclingGoalService {
   }
 
   // Obtener una meta específica
-  Future<RecyclingGoal?> getGoal(String goalId) async {
+  Future<models.RecyclingGoal?> getGoal(String goalId) async {
     try {
       final doc = await _goalsCollection.doc(goalId).get();
       if (!doc.exists) return null;
 
-      return RecyclingGoal.fromMap(doc.data() as Map<String, dynamic>);
+      return models.RecyclingGoal.fromMap(doc.data() as Map<String, dynamic>);
     } catch (e) {
       throw 'Error al obtener la meta: ${e.toString()}';
     }
@@ -68,7 +68,7 @@ class RecyclingGoalService {
   // Actualizar una meta
   Future<void> updateGoal({
     required String goalId,
-    MaterialType? materialType,
+    models.MaterialType? materialType,
     double? targetAmount,
     double? currentAmount,
     bool? isCompleted,
@@ -119,12 +119,12 @@ class RecyclingGoalService {
   }
 
   // Stream para escuchar cambios en las metas en tiempo real
-  Stream<List<RecyclingGoal>> getGoalsStream() {
+  Stream<List<models.RecyclingGoal>> getGoalsStream() {
     return _goalsCollection
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
-            .map((doc) => RecyclingGoal.fromMap(doc.data() as Map<String, dynamic>))
+            .map((doc) => models.RecyclingGoal.fromMap(doc.data() as Map<String, dynamic>))
             .toList());
   }
 

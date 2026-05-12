@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_ufpso/models/recycling_goal.dart';
+import 'package:to_do_ufpso/models/recycling_goal.dart' as models;
 import 'package:to_do_ufpso/utils/app_theme.dart';
 
 class RecyclingGoalList extends StatelessWidget {
-  final List<RecyclingGoal> goals;
-  final Function(RecyclingGoal)? onTap;
-  final Function(RecyclingGoal)? onDelete;
-  final Function(RecyclingGoal)? onAddProgress;
+  final List<models.RecyclingGoal> goals;
+  final Function(models.RecyclingGoal)? onTap;
+  final Function(models.RecyclingGoal)? onDelete;
+  final Function(models.RecyclingGoal)? onAddProgress;
 
   const RecyclingGoalList({
     super.key,
@@ -66,7 +66,7 @@ class RecyclingGoalList extends StatelessWidget {
     );
   }
 
-  Widget _buildGoalCard(BuildContext context, RecyclingGoal goal) {
+  Widget _buildGoalCard(BuildContext context, models.RecyclingGoal goal) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -98,7 +98,7 @@ class RecyclingGoalList extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      _getMaterialIcon(goal.materialType),
+                      _getMaterialIcon(goal.materialType as models.MaterialType),
                       color: AppColors.primary,
                       size: 24,
                     ),
@@ -249,7 +249,7 @@ class RecyclingGoalList extends StatelessWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, RecyclingGoal goal) {
+  void _showDeleteConfirmation(BuildContext context, models.RecyclingGoal goal) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -277,24 +277,24 @@ class RecyclingGoalList extends StatelessWidget {
     );
   }
 
-  IconData _getMaterialIcon(MaterialType material) {
+  IconData _getMaterialIcon(models.MaterialType material) {
     switch (material) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return Icons.local_drink;
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return Icons.description;
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
         return Icons.inventory_2;
     }
   }
 
-  String _getUnitSuffix(MaterialType material) {
+  String _getUnitSuffix(models.MaterialType material) {
     switch (material) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return 'unidades';
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return 'kg';
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
         return 'unidades';
     }
   }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_ufpso/models/recycling_goal.dart';
+import 'package:to_do_ufpso/models/recycling_goal.dart' as models;
 import 'package:to_do_ufpso/services/recycling_goal_service.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 import 'package:to_do_ufpso/widgets/eco_logo.dart';
 import 'package:to_do_ufpso/widgets/recycling_goal_list.dart';
+import 'package:to_do_ufpso/screens/create_goal_screen.dart';
 
 class RecyclingGoalsScreen extends StatefulWidget {
   const RecyclingGoalsScreen({super.key});
@@ -14,7 +15,7 @@ class RecyclingGoalsScreen extends StatefulWidget {
 
 class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
   final RecyclingGoalService _goalService = RecyclingGoalService();
-  List<RecyclingGoal> _goals = [];
+  List<models.RecyclingGoal> _goals = [];
   bool _isLoading = true;
   Map<String, dynamic>? _stats;
 
@@ -54,7 +55,7 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
     }
   }
 
-  Future<void> _deleteGoal(RecyclingGoal goal) async {
+  Future<void> _deleteGoal(models.RecyclingGoal goal) async {
     try {
       await _goalService.deleteGoal(goal.id);
       await _loadGoals();
@@ -79,7 +80,7 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
     }
   }
 
-  void _showAddProgressDialog(RecyclingGoal goal) {
+  void _showAddProgressDialog(models.RecyclingGoal goal) {
     final controller = TextEditingController();
     
     showDialog(
@@ -204,7 +205,7 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
                     const SizedBox(height: 24),
                     
                     // Lista de metas
-                    RecyclingGoalList(
+                    _goals.isEmpty ? _buildEmptyState() : RecyclingGoalList(
                       goals: _goals,
                       onAddProgress: _showAddProgressDialog,
                       onDelete: _deleteGoal,
@@ -326,13 +327,47 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
     );
   }
 
-  String _getUnitSuffix(MaterialType material) {
+  
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Icon(
+            Icons.eco_outlined,
+            size: 80,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No tienes metas de reciclaje',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Crea tu primera meta para empezar a cuidar el planeta',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getUnitSuffix(models.MaterialType material) {
     switch (material) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return 'unidades';
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return 'kg';
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
         return 'unidades';
     }
   }

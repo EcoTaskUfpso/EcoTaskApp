@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             borderRadius: BorderRadius.circular(25),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -90,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(22.5),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -128,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.withOpacity(0.3),
+                    color: Colors.green.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -144,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -180,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -335,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: task.color.withOpacity(0.1),
+                      color: task.color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -400,9 +400,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.lightBlue.withOpacity(0.1),
+                  color: AppColors.lightBlue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.lightBlue.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.lightBlue.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,7 +427,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Container(
                       height: 8,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: FractionallySizedBox(
@@ -526,9 +526,6 @@ class _HomeScreenState extends State<HomeScreen> {
     String selectedPriority = task.priority;
     String selectedCategory = task.category;
     DateTime? selectedDate = _parseDate(task.date);
-    String repeatOption = 'No repetir';
-    List<String> selectedDays = [];
-    List<int> selectedDates = [];
     int targetGoal = task.targetGoal;
 
     showDialog(
@@ -699,7 +696,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             if (titleController.text.isNotEmpty && selectedDate != null) {
                               final updatedTask = EcoTask(
                                 title: titleController.text,
-                                date: '${selectedDate!.day} ${_getMonthName(selectedDate!.month)} ${selectedDate!.year}',
+                                date: '${selectedDate.day} ${_getMonthName(selectedDate.month)} ${selectedDate.year}',
                                 priority: selectedPriority,
                                 category: selectedCategory,
                                 description: descriptionController.text.isEmpty ? 'Sin descripción' : descriptionController.text,
@@ -927,7 +924,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: titleError ? Colors.red : AppColors.gray.withOpacity(0.3),
+                          color: titleError ? Colors.red : AppColors.gray.withValues(alpha: 0.3),
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
@@ -984,7 +981,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -1040,9 +1037,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             margin: const EdgeInsets.only(right: 8),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
-                              color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+                              color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
                               border: Border.all(
-                                color: isSelected ? color : AppColors.gray.withOpacity(0.3),
+                                color: isSelected ? color : AppColors.gray.withValues(alpha: 0.3),
                               ),
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -1072,57 +1069,60 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (date != null) {
-                        setState(() {
-                          selectedDate = date;
-                        });
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: dateError ? Colors.red : AppColors.gray.withOpacity(0.3),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      InkWell(
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (date != null) {
+                            setState(() {
+                              selectedDate = date;
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: dateError ? Colors.red : AppColors.gray.withValues(alpha: 0.3),
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.calendar_today, color: dateError ? Colors.red : AppColors.primary),
+                              const SizedBox(width: 12),
+                              Text(
+                                selectedDate != null 
+                                    ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                                    : 'Seleccionar fecha',
+                                style: TextStyle(
+                                  color: selectedDate != null ? AppColors.black : AppColors.gray,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.calendar_today, color: dateError ? Colors.red : AppColors.primary),
-                          const SizedBox(width: 12),
-                          Text(
-                            selectedDate != null
-                                ? '${selectedDate!.day} ${_getMonthName(selectedDate!.month)} ${selectedDate!.year}'
-                                : 'Seleccionar fecha',
+                      if (dateError)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'La fecha es obligatoria',
                             style: TextStyle(
-                              color: selectedDate != null ? AppColors.darkGreen : (dateError ? Colors.red : AppColors.gray),
+                              color: Colors.red,
+                              fontSize: 12,
                             ),
                           ),
-                          const Spacer(),
-                          Icon(Icons.arrow_drop_down, color: dateError ? Colors.red : AppColors.gray),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (dateError)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'La fecha es obligatoria',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontSize: 12,
                         ),
-                      ),
-                    ),
+                    ],
+                  ),
                   
                   const SizedBox(height: 16),
                   
@@ -1137,7 +1137,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: repeatOption,
+                    initialValue: repeatOption,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -1194,7 +1194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           color: isSelected ? AppColors.primary : Colors.transparent,
                           border: Border.all(
-                            color: isSelected ? AppColors.primary : AppColors.gray.withOpacity(0.3),
+                            color: isSelected ? AppColors.primary : AppColors.gray.withValues(alpha: 0.3),
                           ),
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -1243,7 +1243,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           color: isSelected ? AppColors.primary : Colors.transparent,
                           border: Border.all(
-                            color: isSelected ? AppColors.primary : AppColors.gray.withOpacity(0.3),
+                            color: isSelected ? AppColors.primary : AppColors.gray.withValues(alpha: 0.3),
                           ),
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -1415,9 +1415,9 @@ class _HomeScreenState extends State<HomeScreen> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color.withOpacity(0.3)),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Text(
             title,
@@ -1437,7 +1437,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -1486,7 +1486,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: task.color.withOpacity(0.1),
+                      color: task.color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
@@ -1644,7 +1644,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 60,
               height: 24,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextField(
