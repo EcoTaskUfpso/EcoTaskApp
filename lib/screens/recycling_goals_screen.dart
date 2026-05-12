@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_ufpso/models/recycling_goal.dart';
+import 'package:to_do_ufpso/models/recycling_goal.dart' as models;
 import 'package:to_do_ufpso/services/recycling_goal_service.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 import 'package:to_do_ufpso/widgets/eco_logo.dart';
@@ -14,7 +14,7 @@ class RecyclingGoalsScreen extends StatefulWidget {
 
 class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
   final RecyclingGoalService _goalService = RecyclingGoalService();
-  List<RecyclingGoal> _goals = [];
+  List<models.RecyclingGoal> _goals = [];
   bool _isLoading = true;
   Map<String, dynamic>? _stats;
 
@@ -54,7 +54,7 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
     }
   }
 
-  Future<void> _deleteGoal(RecyclingGoal goal) async {
+  Future<void> _deleteGoal(models.RecyclingGoal goal) async {
     try {
       await _goalService.deleteGoal(goal.id);
       await _loadGoals();
@@ -80,7 +80,32 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
     }
   }
 
-  void _showAddProgressDialog(RecyclingGoal goal) {
+  Future<void> _navigateToEditGoal(models.RecyclingGoal goal) async {
+    try {
+      await _goalService.deleteGoal(goal.id);
+      await _loadGoals();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Meta eliminada'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al eliminar la meta: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showAddProgressDialog(models.RecyclingGoal goal) {
     final controller = TextEditingController();
     
     showDialog(
@@ -208,23 +233,27 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
                       goals: _goals,
                       onAddProgress: _showAddProgressDialog,
                       onDelete: _deleteGoal,
+                      onEdit: _navigateToEditGoal,
                     ),
                   ],
                 ),
               ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CreateGoalScreen(),
-            ),
-          ).then((_) => _loadGoals());
-        },
+        onPressed: _navigateToCreateGoal,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Future<void> _navigateToCreateGoal() async {
+    // TODO: Implementar navegación a creación de metas
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Función de creación de metas en desarrollo'),
+        backgroundColor: Colors.orange,
       ),
     );
   }
@@ -326,13 +355,15 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
     );
   }
 
-  String _getUnitSuffix(MaterialType material) {
+  String _getUnitSuffix(models.MaterialType material) {
     switch (material) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return 'unidades';
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return 'kg';
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
+        return 'unidades';
+      default:
         return 'unidades';
     }
   }
