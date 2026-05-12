@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 import 'package:to_do_ufpso/widgets/eco_logo.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'coupons_screen.dart';
+import 'my_coupons_screen.dart';
+import 'init_coupons_screen.dart';
+import '../services/local_coupon_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,6 +15,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final LocalCouponService _couponService = LocalCouponService();
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -209,6 +216,45 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            ListTile(
+              leading: Icon(Icons.local_offer, color: AppColors.primary),
+              title: Text('Cupones Disponibles'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CouponsScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.card_giftcard, color: AppColors.primary),
+              title: Text('Mis Cupones'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyCouponsScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.admin_panel_settings, color: AppColors.primary),
+              title: Text('Inicializar Sistema'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InitCouponsScreen(),
+                  ),
+                );
+              },
+            ),
             ListTile(
               leading: Icon(Icons.person_outline, color: AppColors.primary),
               title: Text('Mi Perfil'),
@@ -678,7 +724,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final completedTask = EcoTask(
                 title: task.title,
                 date: task.date,
@@ -700,13 +746,52 @@ class _HomeScreenState extends State<HomeScreen> {
                 });
               }
               
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('¡Tarea completada: ${task.title}!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              // Generar cupón automáticamente
+              try {
+                final coupon = await _couponService.generateCouponForTask(task.title, task.category);
+                
+                Navigator.pop(context);
+                
+                // Mostrar mensaje con cupón
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('¡Tarea completada: ${task.title}!'),
+                        const SizedBox(height: 4),
+                        Text('🎁 ¡Has ganado un cupón: ${coupon.title}!', 
+                             style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('Revisa "Mis Cupones" en el menú para usarlo.'),
+                      ],
+                    ),
+                    backgroundColor: Colors.green,
+                    duration: const Duration(seconds: 5),
+                    action: SnackBarAction(
+                      label: 'Ver Cupones',
+                      textColor: Colors.white,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MyCouponsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              } catch (e) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('¡Tarea completada: ${task.title}!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
             },
             child: Text('Completar'),
           ),
