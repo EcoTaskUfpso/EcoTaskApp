@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 import 'package:to_do_ufpso/widgets/eco_logo.dart';
+import 'register_recycling_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -289,6 +290,19 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            ListTile(
+              leading: Icon(Icons.recycling, color: AppColors.primary),
+              title: Text('Registrar Reciclaje'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RegisterRecyclingScreen(),
+                  ),
+                );
+              },
+            ),
             ListTile(
               leading: Icon(Icons.person_outline, color: AppColors.primary),
               title: Text('Mi Perfil'),
