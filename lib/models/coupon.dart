@@ -27,7 +27,7 @@ class Coupon {
   final String? partnerCompany; // Empresa colaboradora
   final String imageUrl;
   final String code;
-  final int pointsRequired; // Puntos necesarios para reclamar
+  final int pointsRequired; // Puntos necesarios para reclamar (actualizado HU-09)
   final DateTime createdAt;
   final DateTime expiresAt;
   final DateTime? claimedAt;
