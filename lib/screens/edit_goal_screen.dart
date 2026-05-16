@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_ufpso/models/recycling_goal.dart';
+import 'package:to_do_ufpso/models/recycling_goal.dart' as models;
 import 'package:to_do_ufpso/services/recycling_goal_service.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 import 'package:to_do_ufpso/widgets/eco_logo.dart';
 
 class EditGoalScreen extends StatefulWidget {
-  final RecyclingGoal goal;
+  final models.RecyclingGoal goal;
 
   const EditGoalScreen({super.key, required this.goal});
 
@@ -18,10 +18,10 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
   final _amountController = TextEditingController();
   final RecyclingGoalService _goalService = RecyclingGoalService();
 
-  MaterialType _selectedMaterial;
+  models.MaterialType _selectedMaterial;
   bool _isLoading = false;
 
-  _EditGoalScreenState() : _selectedMaterial = MaterialType.bottles;
+  _EditGoalScreenState() : _selectedMaterial = models.MaterialType.bottles;
 
   @override
   void initState() {
@@ -163,8 +163,8 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
                   ],
                 ),
                 child: Column(
-                  children: MaterialType.values.map((material) {
-                    return RadioListTile<MaterialType>(
+                  children: models.MaterialType.values.map((material) {
+                    return RadioListTile<models.MaterialType>(
                       title: Row(
                         children: [
                           Icon(
@@ -184,7 +184,7 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
                       ),
                       value: material,
                       groupValue: _selectedMaterial,
-                      onChanged: (MaterialType? value) {
+                      onChanged: (models.MaterialType? value) {
                         setState(() {
                           _selectedMaterial = value!;
                         });
@@ -349,32 +349,25 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
     );
   }
 
-  IconData _getMaterialIcon(MaterialType material) {
+  IconData _getMaterialIcon(models.MaterialType material) {
     switch (material) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return Icons.local_drink;
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return Icons.description;
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
         return Icons.inventory_2;
     }
   }
 
-  String _getUnitSuffix() {
-    return _getUnitSuffixForType(_selectedMaterial);
-  }
-
-  String _getUnitSuffix(MaterialType material) {
-    return _getUnitSuffixForType(material);
-  }
-
-  String _getUnitSuffixForType(MaterialType material) {
-    switch (material) {
-      case MaterialType.bottles:
+  String _getUnitSuffix([models.MaterialType? material]) {
+    final mat = material ?? _selectedMaterial;
+    switch (mat) {
+      case models.MaterialType.bottles:
         return 'unidades';
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return 'kg';
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
         return 'unidades';
     }
   }

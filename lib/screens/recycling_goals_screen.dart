@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_ufpso/models/recycling_goal.dart';
+import 'package:to_do_ufpso/models/recycling_goal.dart' as models;
 import 'package:to_do_ufpso/services/recycling_goal_service.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 import 'package:to_do_ufpso/widgets/eco_logo.dart';
 import 'package:to_do_ufpso/widgets/recycling_goal_list.dart';
 import 'package:to_do_ufpso/screens/edit_goal_screen.dart';
+import 'package:to_do_ufpso/screens/create_goal_screen.dart';
 
 class RecyclingGoalsScreen extends StatefulWidget {
   const RecyclingGoalsScreen({super.key});
@@ -15,7 +16,7 @@ class RecyclingGoalsScreen extends StatefulWidget {
 
 class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
   final RecyclingGoalService _goalService = RecyclingGoalService();
-  List<RecyclingGoal> _goals = [];
+  List<models.RecyclingGoal> _goals = [];
   bool _isLoading = true;
   Map<String, dynamic>? _stats;
 
@@ -55,7 +56,7 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
     }
   }
 
-  Future<void> _deleteGoal(RecyclingGoal goal) async {
+  Future<void> _deleteGoal(models.RecyclingGoal goal) async {
     try {
       await _goalService.deleteGoal(goal.id);
       await _loadGoals();
@@ -80,7 +81,7 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
     }
   }
 
-  Future<void> _editGoal(RecyclingGoal goal) async {
+  Future<void> _editGoal(models.RecyclingGoal goal) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -93,7 +94,7 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
     }
   }
 
-  void _showAddProgressDialog(RecyclingGoal goal) {
+  void _showAddProgressDialog(models.RecyclingGoal goal) {
     final controller = TextEditingController();
     
     showDialog(
@@ -340,13 +341,13 @@ class _RecyclingGoalsScreenState extends State<RecyclingGoalsScreen> {
     );
   }
 
-  String _getUnitSuffix(MaterialType material) {
+  String _getUnitSuffix(models.MaterialType material) {
     switch (material) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return 'unidades';
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return 'kg';
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
         return 'unidades';
     }
   }
