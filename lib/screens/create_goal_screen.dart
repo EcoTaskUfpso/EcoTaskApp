@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_ufpso/models/recycling_goal.dart';
+import 'package:to_do_ufpso/models/recycling_goal.dart' as models;
 import 'package:to_do_ufpso/services/recycling_goal_service.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 import 'package:to_do_ufpso/widgets/eco_logo.dart';
@@ -16,7 +16,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   final _amountController = TextEditingController();
   final RecyclingGoalService _goalService = RecyclingGoalService();
 
-  MaterialType _selectedMaterial = MaterialType.bottles;
+  models.MaterialType _selectedMaterial = models.MaterialType.bottles;
   bool _isLoading = false;
 
   @override
@@ -151,8 +151,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                   ],
                 ),
                 child: Column(
-                  children: MaterialType.values.map((material) {
-                    return RadioListTile<MaterialType>(
+                  children: models.MaterialType.values.map((material) {
+                    return RadioListTile<models.MaterialType>(
                       title: Row(
                         children: [
                           Icon(
@@ -172,7 +172,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                       ),
                       value: material,
                       groupValue: _selectedMaterial,
-                      onChanged: (MaterialType? value) {
+                      onChanged: (value) {
                         setState(() {
                           _selectedMaterial = value!;
                         });
@@ -291,24 +291,28 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     );
   }
 
-  IconData _getMaterialIcon(MaterialType material) {
+  IconData _getMaterialIcon(models.MaterialType material) {
     switch (material) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return Icons.local_drink;
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return Icons.description;
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
         return Icons.inventory_2;
+      default:
+        return Icons.help;
     }
   }
 
   String _getUnitSuffix() {
     switch (_selectedMaterial) {
-      case MaterialType.bottles:
+      case models.MaterialType.bottles:
         return 'unidades';
-      case MaterialType.paper:
+      case models.MaterialType.paper:
         return 'kg';
-      case MaterialType.boxes:
+      case models.MaterialType.boxes:
+        return 'unidades';
+      default:
         return 'unidades';
     }
   }

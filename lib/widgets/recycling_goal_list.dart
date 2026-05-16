@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide MaterialType;
 import 'package:to_do_ufpso/models/recycling_goal.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 
@@ -285,6 +285,8 @@ class RecyclingGoalList extends StatelessWidget {
         return Icons.description;
       case MaterialType.boxes:
         return Icons.inventory_2;
+      default:
+        return Icons.help;
     }
   }
 
@@ -295,6 +297,8 @@ class RecyclingGoalList extends StatelessWidget {
       case MaterialType.paper:
         return 'kg';
       case MaterialType.boxes:
+        return 'unidades';
+      default:
         return 'unidades';
     }
   }
