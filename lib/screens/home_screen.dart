@@ -18,6 +18,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final LocalCouponService _couponService = LocalCouponService();
   
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+    });
+  }
+  
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
@@ -913,26 +921,42 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context);
                 
                 // Mostrar mensaje con cupón
+                ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    content: Row(
                       children: [
-                        Text('¡Tarea completada: ${task.title}!'),
-                        const SizedBox(height: 4),
-                        Text('🎁 ¡Has ganado un cupón: ${coupon.title}!', 
-                             style: const TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text('Revisa "Mis Cupones" en el menú para usarlo.'),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('¡Tarea completada: ${task.title}!'),
+                              const SizedBox(height: 4),
+                              Text('🎁 ¡Has ganado un cupón: ${coupon.title}!', 
+                                   style: const TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              Text('Revisa "Mis Cupones" en el menú para usarlo.'),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          },
+                        ),
                       ],
                     ),
                     backgroundColor: Colors.green,
-                    duration: const Duration(seconds: 5),
+                    duration: const Duration(seconds: 4),
+                    behavior: SnackBarBehavior.floating,
+                    dismissDirection: DismissDirection.horizontal,
                     action: SnackBarAction(
                       label: 'Ver Cupones',
                       textColor: Colors.white,
                       onPressed: () {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
                         Navigator.push(
                           context,
                           MaterialPageRoute(
