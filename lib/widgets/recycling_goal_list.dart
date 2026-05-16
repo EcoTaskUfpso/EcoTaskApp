@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide MaterialType;
 import 'package:to_do_ufpso/models/recycling_goal.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 

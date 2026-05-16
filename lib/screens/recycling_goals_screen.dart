@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide MaterialType;
 import 'package:to_do_ufpso/models/recycling_goal.dart';
+import 'package:to_do_ufpso/screens/create_goal_screen.dart';
 import 'package:to_do_ufpso/services/recycling_goal_service.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 import 'package:to_do_ufpso/widgets/eco_logo.dart';
