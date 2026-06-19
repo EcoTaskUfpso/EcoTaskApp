@@ -11,6 +11,7 @@ class AppColors {
   
   // Colores neutros
   static const Color black = Color.fromRGBO(0, 0, 0, 1);
+  static const Color textPrimary = Color.fromRGBO(33, 33, 33, 1); // Texto principal
   static const Color gray = Color.fromRGBO(129, 131, 134, 1);
   static const Color gray50 = Color.fromRGBO(129, 131, 134, 0.5);
   static const Color surface = Color.fromRGBO(248, 251, 248, 1); // Fondo verde muy claro

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:to_do_ufpso/utils/app_theme.dart';
 import 'package:to_do_ufpso/widgets/eco_logo.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'coupons_screen.dart';
+import 'my_coupons_screen.dart';
+import 'init_coupons_screen.dart';
+import '../services/local_coupon_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,6 +15,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final LocalCouponService _couponService = LocalCouponService();
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,6 +121,166 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             
+            // Tarjeta de acceso rápido a metas de reciclaje
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.green[400]!,
+                    Colors.green[600]!,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: InkWell(
+                onTap: () {
+                  Navigator.pushNamed(context, '/recycling-goals');
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.eco,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Metas de Reciclaje',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Establece y sigue tus objetivos ambientales',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Tarjeta de acceso a cupones
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.orange[400]!,
+                    Colors.orange[600]!,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: InkWell(
+                onTap: () {
+                  Navigator.pushNamed(context, '/coupons');
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.card_giftcard,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mis Cupones',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Recompensas por tus logros ambientales',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
             // Lista de tareas organizadas por fecha
             Expanded(
               child: ListView(
@@ -209,6 +376,45 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            ListTile(
+              leading: Icon(Icons.local_offer, color: AppColors.primary),
+              title: Text('Cupones Disponibles'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CouponsScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.card_giftcard, color: AppColors.primary),
+              title: Text('Mis Cupones'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyCouponsScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.admin_panel_settings, color: AppColors.primary),
+              title: Text('Inicializar Sistema'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InitCouponsScreen(),
+                  ),
+                );
+              },
+            ),
             ListTile(
               leading: Icon(Icons.person_outline, color: AppColors.primary),
               title: Text('Mi Perfil'),
@@ -678,7 +884,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final completedTask = EcoTask(
                 title: task.title,
                 date: task.date,
@@ -700,13 +906,52 @@ class _HomeScreenState extends State<HomeScreen> {
                 });
               }
               
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('¡Tarea completada: ${task.title}!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              // Generar cupón automáticamente
+              try {
+                final coupon = await _couponService.generateCouponForTask(task.title, task.category);
+                
+                Navigator.pop(context);
+                
+                // Mostrar mensaje con cupón
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('¡Tarea completada: ${task.title}!'),
+                        const SizedBox(height: 4),
+                        Text('🎁 ¡Has ganado un cupón: ${coupon.title}!', 
+                             style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('Revisa "Mis Cupones" en el menú para usarlo.'),
+                      ],
+                    ),
+                    backgroundColor: Colors.green,
+                    duration: const Duration(seconds: 5),
+                    action: SnackBarAction(
+                      label: 'Ver Cupones',
+                      textColor: Colors.white,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MyCouponsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              } catch (e) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('¡Tarea completada: ${task.title}!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
             },
             child: Text('Completar'),
           ),
